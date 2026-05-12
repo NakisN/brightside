@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bright Side — Good News Daily</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --sun: #F5C842; --warm: #F7A440; --green: #2D7A5F;
+    --ink: #1A2C25; --soft: #F9F5EC; --card-bg: #FFFFFF; --radius: 18px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'DM Sans',sans-serif; background:var(--soft); color:var(--ink); min-height:100vh; }
+  body::before {
+    content:''; display:block; height:6px;
+    background:linear-gradient(90deg,var(--sun),var(--warm),var(--green),#5CB8A0,var(--sun));
+    background-size:200% 100%; animation:shimmer 4s linear infinite;
+  }
+  @keyframes shimmer { 0%{background-position:0%} 100%{background-position:200%} }
+  header { text-align:center; padding:44px 24px 28px; }
+  .sun-icon { font-size:44px; animation:spin-slow 12s linear infinite; display:inline-block; margin-bottom:10px; }
+  @keyframes spin-slow { to{transform:rotate(360deg)} }
+  h1 { font-family:'Playfair Display',serif; font-size:clamp(2.2rem,5vw,3.4rem); font-weight:700; color:var(--green); line-height:1.1; }
+  h1 em { font-style:italic; color:var(--warm); }
+  .subtitle { margin-top:10px; font-size:0.9rem; font-weight:300; color:#5A7A6A; letter-spacing:0.06em; text-transform:uppercase; }
+  #date-label { display:inline-block; margin-top:14px; background:var(--green); color:#fff; font-size:0.78rem; font-weight:500; padding:5px 16px; border-radius:20px; }
+  #refresh-btn {
+    display:flex; align-items:center; gap:10px; margin:20px auto 32px;
+    background:var(--green); color:#fff; border:none; border-radius:50px;
+    padding:13px 32px; font-family:'DM Sans',sans-serif; font-size:1rem; font-weight:500;
+    cursor:pointer; transition:background 0.2s,transform 0.15s;
+    box-shadow:0 4px 18px rgba(45,122,95,0.25);
+  }
+  #refresh-btn:hover { background:#235f49; transform:scale(1.03); }
+  #refresh-btn:active { transform:scale(0.97); }
+  #refresh-btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  #news-grid {
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(310px,1fr));
+    gap:18px; max-width:1080px; margin:0 auto; padding:0 22px 48px;
+  }
+  .news-card {
+    background:var(--card-bg); border-radius:var(--radius); padding:26px 24px;
+    box-shadow:0 2px 12px rgba(45,122,95,0.07); border:1.5px solid rgba(45,122,95,0.08);
+    transition:transform 0.25s,box-shadow 0.25s; animation:fadeUp 0.5s ease both;
+    position:relative; overflow:hidden;
+  }
+  .news-card::before {
+    content:''; position:absolute; top:0; left:0; width:4px; height:100%;
+    background:linear-gradient(180deg,var(--sun),var(--warm)); border-radius:4px 0 0 4px;
+  }
+  .news-card:hover { transform:translateY(-4px); box-shadow:0 8px 28px rgba(45,122,95,0.13); }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+  .card-emoji { font-size:1.9rem; margin-bottom:10px; display:block; }
+  .card-category { font-size:0.67rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--warm); margin-bottom:7px; }
+  .card-headline { font-family:'Playfair Display',serif; font-size:1.08rem; font-weight:700; line-height:1.4; color:var(--ink); margin-bottom:9px; }
+  .card-body { font-size:0.86rem; line-height:1.65; color:#4A6558; font-weight:300; }
+  .card-ratings { display:flex; gap:12px; margin-top:15px; padding-top:13px; border-top:1px solid rgba(45,122,95,0.1); }
+  .rating-block { flex:1; }
+  .rating-label { font-size:0.63rem; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; color:#8AAA98; margin-bottom:5px; }
+  .rating-bar-wrap { background:#EDF5F1; border-radius:20px; height:6px; overflow:hidden; }
+  .rating-bar { height:100%; border-radius:20px; width:0%; transition:width 0.9s cubic-bezier(0.4,0,0.2,1); }
+  .rating-bar.feelgood { background:linear-gradient(90deg,var(--sun),var(--warm)); }
+  .rating-bar.inspirational { background:linear-gradient(90deg,#5CB8A0,var(--green)); }
+  .rating-score { font-size:0.73rem; font-weight:500; color:var(--ink); margin-top:4px; }
+  .skeleton { background:var(--card-bg); border-radius:var(--radius); padding:26px 24px; border:1.5px solid rgba(45,122,95,0.08); }
+  .skel-line { background:linear-gradient(90deg,#e8f0ec 25%,#d4e5dc 50%,#e8f0ec 75%); background-size:200% 100%; animation:skel-shimmer 1.4s infinite; border-radius:6px; margin-bottom:9px; }
+  @keyframes skel-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+  #error-msg { display:none; text-align:center; color:#c05a3a; padding:20px; font-size:0.9rem; }
+  footer { text-align:center; padding:24px; font-size:0.76rem; color:#8AAA98; border-top:1px solid rgba(45,122,95,0.1); }
+</style>
+</head>
+<body>
+<header>
+  <div class="sun-icon">☀️</div>
+  <h1>Bright <em>Side</em></h1>
+  <p class="subtitle">Good news from around the world</p>
+  <span id="date-label"></span>
+</header>
+<div style="text-align:center">
+  <button id="refresh-btn">✦ New Bright Stories</button>
+</div>
+<p id="error-msg">Something went wrong. Please try again.</p>
+<div id="news-grid"></div>
+<footer>Powered by AI · Good vibes only · Bright Side Daily</footer>
+<script>
+function setDate() {
+  const d = new Date();
+  document.getElementById('date-label').textContent =
+    d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+}
+
+function showSkeletons() {
+  const grid = document.getElementById('news-grid');
+  grid.innerHTML = '';
+  for (let i = 0; i < 10; i++) {
+    grid.innerHTML += `<div class="skeleton">
+      <div class="skel-line" style="width:38px;height:30px;border-radius:8px;margin-bottom:13px"></div>
+      <div class="skel-line" style="width:55%;height:11px"></div>
+      <div class="skel-line" style="width:92%;height:17px"></div>
+      <div class="skel-line" style="width:78%;height:17px"></div>
+      <div class="skel-line" style="width:100%;height:11px;margin-top:11px"></div>
+      <div class="skel-line" style="width:88%;height:11px"></div>
+    </div>`;
+  }
+}
+
+function renderCards(stories) {
+  const grid = document.getElementById('news-grid');
+  grid.innerHTML = '';
+  stories.forEach((s, i) => {
+    const fg = s.feelgood ?? 7;
+    const ins = s.inspirational ?? 7;
+    const card = document.createElement('div');
+    card.className = 'news-card';
+    card.style.animationDelay = `${i * 0.06}s`;
+    card.innerHTML = `
+      <span class="card-emoji">${s.emoji}</span>
+      <div class="card-category">${s.category}</div>
+      <div class="card-headline">${s.headline}</div>
+      <div class="card-body">${s.summary}</div>
+      <div class="card-ratings">
+        <div class="rating-block">
+          <div class="rating-label">😊 Feel-Good</div>
+          <div class="rating-bar-wrap"><div class="rating-bar feelgood" data-val="${fg}"></div></div>
+          <div class="rating-score">${fg}/10</div>
+        </div>
+        <div class="rating-block">
+          <div class="rating-label">✨ Inspirational</div>
+          <div class="rating-bar-wrap"><div class="rating-bar inspirational" data-val="${ins}"></div></div>
+          <div class="rating-score">${ins}/10</div>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+  requestAnimationFrame(() => setTimeout(() => {
+    document.querySelectorAll('.rating-bar').forEach(b => {
+      b.style.width = (parseInt(b.dataset.val) / 10 * 100) + '%';
+    });
+  }, 100));
+}
+
+async function fetchNews() {
+  const btn = document.getElementById('refresh-btn');
+  const errEl = document.getElementById('error-msg');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  showSkeletons();
+  try {
+    const res = await fetch('/.netlify/functions/stories');
+    const stories = await res.json();
+    renderCards(stories);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('news-grid').innerHTML = '';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+setDate();
+fetchNews();
+document.getElementById('refresh-btn').addEventListener('click', fetchNews);
+</script>
+</body>
+</html>
