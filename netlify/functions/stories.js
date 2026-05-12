@@ -11,12 +11,12 @@ exports.handler = async function(event, context) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.9, maxOutputTokens: 2000 }
+        generationConfig: { temperature: 0.9, maxOutputTokens: 4000 }
       })
     });
 
     const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || JSON.stringify(data);
     const clean = text.replace(/```json|```/g, '').trim();
     const stories = JSON.parse(clean);
 
