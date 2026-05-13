@@ -43,7 +43,7 @@
     background:var(--card-bg); border-radius:var(--radius); padding:26px 24px;
     box-shadow:0 2px 12px rgba(45,122,95,0.07); border:1.5px solid rgba(45,122,95,0.08);
     transition:transform 0.25s,box-shadow 0.25s; animation:fadeUp 0.5s ease both;
-    position:relative; overflow:hidden; cursor:pointer;
+    position:relative; overflow:hidden;
   }
   .news-card::before {
     content:''; position:absolute; top:0; left:0; width:4px; height:100%;
@@ -63,12 +63,14 @@
   .rating-bar.feelgood { background:linear-gradient(90deg,var(--sun),var(--warm)); }
   .rating-bar.inspirational { background:linear-gradient(90deg,#5CB8A0,var(--green)); }
   .rating-score { font-size:0.73rem; font-weight:500; color:var(--ink); margin-top:4px; }
-  .read-more { display:inline-block; margin-top:12px; font-size:0.75rem; font-weight:500; color:var(--green); letter-spacing:0.05em; }
   .skeleton { background:var(--card-bg); border-radius:var(--radius); padding:26px 24px; border:1.5px solid rgba(45,122,95,0.08); }
   .skel-line { background:linear-gradient(90deg,#e8f0ec 25%,#d4e5dc 50%,#e8f0ec 75%); background-size:200% 100%; animation:skel-shimmer 1.4s infinite; border-radius:6px; margin-bottom:9px; }
   @keyframes skel-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   #error-msg { display:none; text-align:center; color:#c05a3a; padding:20px; font-size:0.9rem; }
   footer { text-align:center; padding:24px; font-size:0.76rem; color:#8AAA98; border-top:1px solid rgba(45,122,95,0.1); }
+  .news-card { cursor:pointer; }
+  .read-more { display:inline-block; margin-top:12px; font-size:0.75rem; font-weight:500; color:var(--green); letter-spacing:0.05em; }
+  /* Modal */
   #modal-overlay {
     display:none; position:fixed; inset:0; background:rgba(26,44,37,0.6);
     backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; padding:24px;
@@ -104,11 +106,13 @@
   <p class="subtitle">Good news from around the world</p>
   <span id="date-label"></span>
 </header>
-<p id="error-msg">Something went wrong. Please try again.</p>
-<div id="news-grid"></div>
 <div style="text-align:center">
   <button id="refresh-btn">✦ New Bright Stories</button>
 </div>
+<p id="error-msg">Something went wrong. Please try again.</p>
+<div id="news-grid"></div>
+
+<!-- Modal -->
 <div id="modal-overlay">
   <div id="modal-box">
     <button id="modal-close">✕</button>
@@ -126,6 +130,7 @@ function setDate() {
   document.getElementById('date-label').textContent =
     d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 }
+
 function showSkeletons() {
   const grid = document.getElementById('news-grid');
   grid.innerHTML = '';
@@ -140,6 +145,7 @@ function showSkeletons() {
     </div>`;
   }
 }
+
 function renderCards(stories) {
   const grid = document.getElementById('news-grid');
   grid.innerHTML = '';
@@ -157,4 +163,91 @@ function renderCards(stories) {
       <div class="card-ratings">
         <div class="rating-block">
           <div class="rating-label">😊 Feel-Good</div>
-          <div class="rating-bar
+          <div class="rating-bar-wrap"><div class="rating-bar feelgood" data-val="${fg}"></div></div>
+          <div class="rating-score">${fg}/10</div>
+        </div>
+        <div class="rating-block">
+          <div class="rating-label">✨ Inspirational</div>
+          <div class="rating-bar-wrap"><div class="rating-bar inspirational" data-val="${ins}"></div></div>
+          <div class="rating-score">${ins}/10</div>
+        </div>
+      </div>
+      <span class="read-more">Tap to read more →</span>`;
+    card.addEventListener('click', () => openModal(s));
+    grid.appendChild(card);
+  });
+  requestAnimationFrame(() => setTimeout(() => {
+    document.querySelectorAll('.rating-bar').forEach(b => {
+      b.style.width = (parseInt(b.dataset.val) / 10 * 100) + '%';
+    });
+  }, 100));
+}
+
+async function openModal(s) {
+  const overlay = document.getElementById('modal-overlay');
+  document.getElementById('modal-emoji').textContent = s.emoji;
+  document.getElementById('modal-category').textContent = s.category;
+  document.getElementById('modal-headline').textContent = s.headline;
+  document.getElementById('modal-detail').innerHTML = '<div id="modal-loading">Loading full story...</div>';
+  document.getElementById('modal-ratings').innerHTML = `
+    <div class="rating-block">
+      <div class="rating-label">😊 Feel-Good</div>
+      <div class="rating-bar-wrap"><div class="rating-bar feelgood" style="width:${(s.feelgood/10*100)}%"></div></div>
+      <div class="rating-score">${s.feelgood}/10</div>
+    </div>
+    <div class="rating-block">
+      <div class="rating-label">✨ Inspirational</div>
+      <div class="rating-bar-wrap"><div class="rating-bar inspirational" style="width:${(s.inspirational/10*100)}%"></div></div>
+      <div class="rating-score">${s.inspirational}/10</div>
+    </div>`;
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  try {
+    const res = await fetch('/.netlify/functions/detail', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ headline: s.headline, summary: s.summary, category: s.category })
+    });
+    const data = await res.json();
+    document.getElementById('modal-detail').innerHTML = data.detail;
+  } catch(e) {
+    document.getElementById('modal-detail').innerHTML = `<p>${s.summary}</p>`;
+  }
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+async function fetchNews() {
+  const btn = document.getElementById('refresh-btn');
+  const errEl = document.getElementById('error-msg');
+  errEl.style.display = 'none';
+  btn.disabled = true;
+  showSkeletons();
+  try {
+    const res = await fetch('/.netlify/functions/stories');
+    const stories = await res.json();
+    renderCards(stories);
+  } catch (e) {
+    console.error(e);
+    document.getElementById('news-grid').innerHTML = '';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+setDate();
+fetchNews();
+document.getElementById('refresh-btn').addEventListener('click', fetchNews);
+</script>
+</body>
+</html>
