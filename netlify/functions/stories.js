@@ -1,5 +1,5 @@
 exports.handler = async function(event, context) {
-  const GEMINI_KEY = 'AIzaSyDkF0MxCQv2igcN2xkA-_eAV2mgT3E-gv4';
+ const GEMINI_KEY = process.env.GEMINI_API_KEY;
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
 
   const today = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
