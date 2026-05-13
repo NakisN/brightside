@@ -43,7 +43,7 @@
     background:var(--card-bg); border-radius:var(--radius); padding:26px 24px;
     box-shadow:0 2px 12px rgba(45,122,95,0.07); border:1.5px solid rgba(45,122,95,0.08);
     transition:transform 0.25s,box-shadow 0.25s; animation:fadeUp 0.5s ease both;
-    position:relative; overflow:hidden;
+    position:relative; overflow:hidden; cursor:pointer;
   }
   .news-card::before {
     content:''; position:absolute; top:0; left:0; width:4px; height:100%;
@@ -63,11 +63,38 @@
   .rating-bar.feelgood { background:linear-gradient(90deg,var(--sun),var(--warm)); }
   .rating-bar.inspirational { background:linear-gradient(90deg,#5CB8A0,var(--green)); }
   .rating-score { font-size:0.73rem; font-weight:500; color:var(--ink); margin-top:4px; }
+  .read-more { display:inline-block; margin-top:12px; font-size:0.75rem; font-weight:500; color:var(--green); letter-spacing:0.05em; }
   .skeleton { background:var(--card-bg); border-radius:var(--radius); padding:26px 24px; border:1.5px solid rgba(45,122,95,0.08); }
   .skel-line { background:linear-gradient(90deg,#e8f0ec 25%,#d4e5dc 50%,#e8f0ec 75%); background-size:200% 100%; animation:skel-shimmer 1.4s infinite; border-radius:6px; margin-bottom:9px; }
   @keyframes skel-shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
   #error-msg { display:none; text-align:center; color:#c05a3a; padding:20px; font-size:0.9rem; }
   footer { text-align:center; padding:24px; font-size:0.76rem; color:#8AAA98; border-top:1px solid rgba(45,122,95,0.1); }
+  #modal-overlay {
+    display:none; position:fixed; inset:0; background:rgba(26,44,37,0.6);
+    backdrop-filter:blur(4px); z-index:1000; align-items:center; justify-content:center; padding:24px;
+  }
+  #modal-overlay.open { display:flex; }
+  #modal-box {
+    background:#fff; border-radius:24px; max-width:600px; width:100%; max-height:85vh;
+    overflow-y:auto; padding:36px 32px; position:relative;
+    animation:modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes modalIn { from{opacity:0;transform:scale(0.92)} to{opacity:1;transform:scale(1)} }
+  #modal-close {
+    position:absolute; top:16px; right:16px; background:var(--soft); border:none;
+    border-radius:50%; width:36px; height:36px; font-size:1.2rem; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; color:var(--ink);
+    transition:background 0.2s;
+  }
+  #modal-close:hover { background:#e8ede9; }
+  #modal-emoji { font-size:2.4rem; margin-bottom:10px; display:block; }
+  #modal-category { font-size:0.67rem; font-weight:500; letter-spacing:0.1em; text-transform:uppercase; color:var(--warm); margin-bottom:8px; }
+  #modal-headline { font-family:'Playfair Display',serif; font-size:1.4rem; font-weight:700; line-height:1.35; color:var(--ink); margin-bottom:16px; }
+  #modal-detail { font-size:0.92rem; line-height:1.75; color:#4A6558; font-weight:300; }
+  #modal-detail p { margin-bottom:12px; }
+  #modal-loading { text-align:center; padding:20px; color:#8AAA98; font-size:0.9rem; }
+  .modal-ratings { display:flex; gap:16px; margin-top:20px; padding-top:16px; border-top:1px solid rgba(45,122,95,0.1); }
+  .modal-ratings .rating-block { flex:1; }
 </style>
 </head>
 <body>
@@ -77,9 +104,21 @@
   <p class="subtitle">Good news from around the world</p>
   <span id="date-label"></span>
 </header>
-
 <p id="error-msg">Something went wrong. Please try again.</p>
-<div id="news-grid"></div><div style="text-align:center"><button id="refresh-btn">✦ New Bright Stories</button></div>
+<div id="news-grid"></div>
+<div style="text-align:center">
+  <button id="refresh-btn">✦ New Bright Stories</button>
+</div>
+<div id="modal-overlay">
+  <div id="modal-box">
+    <button id="modal-close">✕</button>
+    <span id="modal-emoji"></span>
+    <div id="modal-category"></div>
+    <div id="modal-headline"></div>
+    <div id="modal-detail"></div>
+    <div class="modal-ratings" id="modal-ratings"></div>
+  </div>
+</div>
 <footer>Powered by AI · Good vibes only · Bright Side Daily</footer>
 <script>
 function setDate() {
@@ -87,7 +126,6 @@ function setDate() {
   document.getElementById('date-label').textContent =
     d.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
 }
-
 function showSkeletons() {
   const grid = document.getElementById('news-grid');
   grid.innerHTML = '';
@@ -102,7 +140,6 @@ function showSkeletons() {
     </div>`;
   }
 }
-
 function renderCards(stories) {
   const grid = document.getElementById('news-grid');
   grid.innerHTML = '';
@@ -120,46 +157,4 @@ function renderCards(stories) {
       <div class="card-ratings">
         <div class="rating-block">
           <div class="rating-label">😊 Feel-Good</div>
-          <div class="rating-bar-wrap"><div class="rating-bar feelgood" data-val="${fg}"></div></div>
-          <div class="rating-score">${fg}/10</div>
-        </div>
-        <div class="rating-block">
-          <div class="rating-label">✨ Inspirational</div>
-          <div class="rating-bar-wrap"><div class="rating-bar inspirational" data-val="${ins}"></div></div>
-          <div class="rating-score">${ins}/10</div>
-        </div>
-      </div>`;
-    grid.appendChild(card);
-  });
-  requestAnimationFrame(() => setTimeout(() => {
-    document.querySelectorAll('.rating-bar').forEach(b => {
-      b.style.width = (parseInt(b.dataset.val) / 10 * 100) + '%';
-    });
-  }, 100));
-}
-
-async function fetchNews() {
-  const btn = document.getElementById('refresh-btn');
-  const errEl = document.getElementById('error-msg');
-  errEl.style.display = 'none';
-  btn.disabled = true;
-  showSkeletons();
-  try {
-    const res = await fetch('/.netlify/functions/stories');
-    const stories = await res.json();
-    renderCards(stories);
-  } catch (e) {
-    console.error(e);
-    document.getElementById('news-grid').innerHTML = '';
-    errEl.style.display = 'block';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-setDate();
-fetchNews();
-document.getElementById('refresh-btn').addEventListener('click', fetchNews);
-</script>
-</body>
-</html>
+          <div class="rating-bar
