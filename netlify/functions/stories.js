@@ -3,7 +3,7 @@ exports.handler = async function(event, context) {
   const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${GEMINI_KEY}`;
 
   const today = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'long', year:'numeric'});
-  const prompt = `Today is ${today}. Generate exactly 10 uplifting news stories. Return ONLY a JSON array of 10 objects. Each object: {"emoji":"<emoji>","category":"<category>","headline":"<headline under 12 words>","summary":"<1-2 short sentences>","feelgood":<1-10>,"inspirational":<1-10>}. No markdown, no backticks, nothing else.`;
+  const prompt = `Today is ${today}. Generate exactly 10 uplifting news stories. Return ONLY a JSON array of 10 objects. Each object: {"emoji":"<emoji>","category":"<category>","headline":"<headline under 12 words>","summary":"<engaging paragraph of around 120 words>","feelgood":<1-10>,"inspirational":<1-10>}. No markdown, no backticks, nothing else.`;
 
   try {
     const res = await fetch(GEMINI_URL, {
